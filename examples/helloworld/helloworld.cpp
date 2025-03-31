@@ -12,7 +12,7 @@
 // Now include all PoDoFo header files, to have access
 // to all functions of PoDoFo and so that you do not have
 // to care about the order of includes.
-// 
+//
 // You should always use podofo.h and not try to include
 // the required headers on your own.
 #include <podofo/podofo.h>
@@ -28,6 +28,34 @@ void PrintHelp()
         << "Please see https://github.com/podofo/podofo for more information" << endl << endl;
     cout << "Usage:" << endl;
     cout << "  helloworld [outputfile.pdf]" << endl << endl;
+}
+
+std::vector<std::byte> loadFile(const std::string& file_path)
+{
+  std::ifstream input_file_stream(file_path, std::ios::binary | std::ios::ate);
+
+  if (!input_file_stream)
+  {
+    return {};
+  }
+
+  auto end_position = input_file_stream.tellg();
+  input_file_stream.seekg(0, std::ios::beg);
+
+  auto buffer_size = std::size_t(end_position - input_file_stream.tellg());
+  if (0 == buffer_size)
+  {
+    return {};
+  }
+
+  std::vector<std::byte> buffer(buffer_size);
+  if (!input_file_stream.read(reinterpret_cast<char*>(buffer.data()),
+                              static_cast<std::streamsize>(buffer.size())))
+  {
+    return {};
+  }
+
+  return buffer;
 }
 
 void HelloWorld(const string_view& filename)
@@ -49,7 +77,7 @@ void HelloWorld(const string_view& filename)
         // The PdfDocument object can be used to create new PdfPage objects.
         // The PdfPage object is owned by the PdfDocument will also be deleted automatically
         // by the PdfDocument object.
-        // 
+        //
         // You have to pass only one argument, i.e. the page size of the page to create.
         // There are predefined enums for some common page sizes.
         auto& page = document.GetPages().CreatePage(PdfPageSize::A4);
@@ -61,9 +89,11 @@ void HelloWorld(const string_view& filename)
         // Create a PdfFont object using the font "Arial".
         // The font is found on the system using fontconfig and embedded into the
         // PDF file. If Arial is not available, a default font will be used.
-        // 
+        //
         // The created PdfFont will be deleted by the PdfDocument.
-        font = document.GetFonts().SearchFont("Arial");
+
+        const auto font_buffer = loadFile("../../examples/helloworld/font.ttf");
+        font = &document.GetFonts().GetOrCreateFontFromBuffer({reinterpret_cast<const char*>(font_buffer.data()), font_buffer.size()});
 
         // If the PdfFont object cannot be allocated return an error.
         if (font == nullptr)
@@ -82,7 +112,7 @@ void HelloWorld(const string_view& filename)
 
         // You could set a different color than black to draw
         // the text.
-        // 
+        //
         // painter.SetColor(1.0, 0.0, 0.0);
 
         // Actually draw the line "Hello World!" on to the PdfPage at
@@ -90,9 +120,9 @@ void HelloWorld(const string_view& filename)
         // Please remember that PDF files have their origin at the
         // bottom left corner. Therefore we substract the y coordinate
         // from the page height.
-        // 
+        //
         // The position specifies the start of the baseline of the text.
-        // 
+        //
         // All coordinates in PoDoFo are in PDF units.
         painter.DrawText("ABCDEFGHIKLMNOPQRSTVXYZ", 56.69, page.GetRect().Height - 56.69);
 
@@ -153,10 +183,10 @@ int main(int argc, char* argv[])
     }
 
     // All PoDoFo functions will throw an exception in case of an error.
-    // 
+    //
     // You should catch the exception to either fix it or report
     // back to the user.
-    // 
+    //
     // All exceptions PoDoFo throws are objects of the class PdfError.
     // That's why we simply catch PdfError objects.
     try
